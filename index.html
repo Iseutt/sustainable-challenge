@@ -84,16 +84,33 @@
               <ul class="autocomplete-list" hidden></ul>
             </div>
           </label>
-          <div class="form-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="driver-recurring-toggle" />
+            <span data-i18n="driver_recurring">Ce trajet est récurrent (même heure chaque semaine)</span>
+          </label>
+
+          <div id="driver-datetime-field">
             <label>
               <span data-i18n="driver_datetime">Date et heure de départ</span>
               <input type="datetime-local" name="datetime" required />
             </label>
+          </div>
+
+          <div id="driver-recurring-fields" hidden>
             <label>
-              <span data-i18n="driver_seats">Places disponibles</span>
-              <input type="number" name="seats" min="1" max="8" value="3" required />
+              <span data-i18n="driver_recurringDays">Jours de la semaine</span>
+              <div class="weekday-picker" id="driver-weekday-picker"></div>
+            </label>
+            <label>
+              <span data-i18n="driver_recurringTime">Heure de départ</span>
+              <input type="time" name="recurringTime" />
             </label>
           </div>
+
+          <label>
+            <span data-i18n="driver_seats">Places disponibles</span>
+            <input type="number" name="seats" min="1" max="8" value="3" required />
+          </label>
           <label>
             <span data-i18n="driver_note">Note (optionnel)</span>
             <textarea name="note" maxlength="200" rows="2"></textarea>
@@ -105,9 +122,19 @@
     </section>
 
     <section id="tab-passenger" class="tab-panel">
+      <div class="panel-card" id="passenger-suggestions-wrap" hidden>
+        <h2 id="passenger-suggestions-title" data-i18n="suggestions_title">Suggestions pour vous</h2>
+        <p class="rewards-note" data-i18n="suggestions_desc">Ces trajets correspondent à votre itinéraire fixe.</p>
+        <div id="passenger-suggestions" class="card-list"></div>
+      </div>
+
       <div class="panel-card">
         <h2 data-i18n="passenger_title">Trouver un trajet</h2>
         <form id="passenger-form" class="stacked-form stacked-form--inline">
+          <label>
+            <span data-i18n="passenger_yourName">Votre nom</span>
+            <input type="text" name="name" maxlength="60" />
+          </label>
           <label class="grow">
             <span data-i18n="passenger_address">Votre adresse</span>
             <div class="address-field">
@@ -120,6 +147,44 @@
         </form>
         <p id="passenger-feedback" class="form-feedback"></p>
         <div id="passenger-results" class="card-list"></div>
+      </div>
+
+      <div class="panel-card">
+        <h2 data-i18n="itinerary_title">Mon itinéraire fixe</h2>
+        <p class="rewards-note" data-i18n="itinerary_desc">Enregistrez votre trajet habituel : on vous suggérera automatiquement les trajets qui passent sur votre route.</p>
+        <form id="itinerary-form" class="stacked-form">
+          <label>
+            <span data-i18n="passenger_yourName">Votre nom</span>
+            <input type="text" name="itineraryName" maxlength="60" />
+          </label>
+          <label>
+            <span data-i18n="itinerary_address">Votre adresse habituelle</span>
+            <div class="address-field">
+              <input type="text" name="itineraryAddress" required autocomplete="off" placeholder="ex. Vieux-Lille" />
+              <span class="confirm-icon" hidden>✓</span>
+              <ul class="autocomplete-list" hidden></ul>
+            </div>
+          </label>
+          <label>
+            <span data-i18n="itinerary_days">Jours concernés</span>
+            <div class="weekday-picker" id="itinerary-weekday-picker"></div>
+          </label>
+          <div class="form-row">
+            <label>
+              <span data-i18n="itinerary_timeFrom">Départ au plus tôt</span>
+              <input type="time" name="timeFrom" required />
+            </label>
+            <label>
+              <span data-i18n="itinerary_timeTo">Départ au plus tard</span>
+              <input type="time" name="timeTo" required />
+            </label>
+          </div>
+          <div class="trajet-card__actions">
+            <button type="submit" class="btn btn--primary" data-i18n="itinerary_save">Enregistrer mon itinéraire</button>
+            <button type="button" id="itinerary-delete-btn" class="btn btn--danger" data-i18n="itinerary_delete" hidden>Supprimer</button>
+          </div>
+          <p id="itinerary-feedback" class="form-feedback"></p>
+        </form>
       </div>
     </section>
 

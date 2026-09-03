@@ -197,6 +197,31 @@ body {
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(16, 162, 220, 0.15);
 }
+
+.checkbox-label {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem !important;
+  cursor: pointer;
+}
+
+.weekday-picker { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.weekday-btn {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.weekday-btn:hover { border-color: var(--brand); }
+.weekday-btn.selected {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: white;
+  font-weight: 600;
+}
 .stacked-form--inline { flex-direction: row; align-items: flex-end; flex-wrap: wrap; }
 .stacked-form--inline .grow { flex: 1 1 240px; }
 
@@ -255,6 +280,7 @@ body {
 .btn--secondary:hover { background: #e2e8ea; }
 .btn--danger { background: #fdecea; color: var(--error); }
 .btn--danger:hover { background: #fadbd8; }
+.btn--sm { padding: 0.35rem 0.7rem; font-size: 0.78rem; }
 
 .form-feedback { min-height: 1.2rem; font-size: 0.85rem; color: var(--text-muted); }
 .form-feedback--success { color: var(--success); }
@@ -300,6 +326,32 @@ body {
   border-radius: var(--radius-sm);
   margin-top: 0.55rem;
 }
+
+.requests-panel {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--border);
+}
+.requests-panel__label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.35rem; }
+.request-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  padding: 0.3rem 0;
+}
+.request-row__meta { color: var(--text); flex: 1 1 auto; }
+
+.status-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+.status-badge--pending { background: #fff3cd; color: var(--accent-gold-text); }
+.status-badge--accepted { background: #eafaf1; color: var(--success); }
+.status-badge--declined { background: #fdecea; color: var(--error); }
 
 .stat-tiles { display: flex; gap: 0.85rem; margin: 1.1rem 0; }
 .stat-tile {
