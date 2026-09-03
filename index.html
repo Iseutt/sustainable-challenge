@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CoVoiturage Lille</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -17,7 +20,7 @@
       <p class="app-header__tagline" data-i18n="appTagline">Rejoignez un trajet, prenez le bus, le tram ou le train ensemble.</p>
     </div>
     <div class="app-header__actions">
-      <button id="switch-role-btn" class="btn btn--ghost" data-i18n="nav_switchRole" hidden>Changer de profil</button>
+      <button id="switch-role-btn" class="btn btn--ghost" hidden><span data-icon="switch" data-icon-size="14"></span><span data-i18n="nav_switchRole">Changer de profil</span></button>
       <select id="lang-switcher" aria-label="Language"></select>
     </div>
   </header>
@@ -27,30 +30,30 @@
     <p class="landing__subtitle" data-i18n="landing_subtitle">Choisissez votre profil pour commencer.</p>
     <div class="landing__choices">
       <div class="role-card role-card--driver">
-        <span class="role-card__icon" aria-hidden="true">🚗</span>
+        <span class="role-card__icon" data-icon="car" data-icon-size="26" aria-hidden="true"></span>
         <span class="role-card__title" data-i18n="landing_driver">Je suis conducteur</span>
         <span class="role-card__desc" data-i18n="landing_driverDesc">Proposez un trajet et prenez des passagers sur votre route.</span>
-        <button id="role-driver-btn" class="btn btn--primary role-card__cta" data-i18n="landing_continue">Continuer</button>
+        <button id="role-driver-btn" class="btn btn--primary role-card__cta"><span data-i18n="landing_continue">Continuer</span></button>
       </div>
       <div class="role-card role-card--passenger">
-        <span class="role-card__icon" aria-hidden="true">🧍</span>
+        <span class="role-card__icon" data-icon="person" data-icon-size="26" aria-hidden="true"></span>
         <span class="role-card__title" data-i18n="landing_passenger">Je suis passager</span>
         <span class="role-card__desc" data-i18n="landing_passengerDesc">Trouvez un trajet qui passe près de chez vous.</span>
         <label class="role-card__check">
           <input type="checkbox" id="passenger-has-car-checkbox" />
           <span data-i18n="landing_hasCarLabel">Je possède une voiture (nécessaire pour calculer le CO2 que vous évitez)</span>
         </label>
-        <button id="role-passenger-btn" class="btn btn--primary role-card__cta" data-i18n="landing_continue" disabled>Continuer</button>
+        <button id="role-passenger-btn" class="btn btn--primary role-card__cta" disabled><span data-i18n="landing_continue">Continuer</span></button>
       </div>
     </div>
   </section>
 
   <nav class="tab-bar" id="tab-bar" hidden>
-    <button class="tab-btn active" data-tab="map" data-role="both" data-i18n="nav_map">Carte</button>
-    <button class="tab-btn" data-tab="driver" data-role="driver" data-i18n="nav_driver">Conducteur</button>
-    <button class="tab-btn" data-tab="passenger" data-role="passenger" data-i18n="nav_passenger">Passager</button>
-    <button class="tab-btn" data-tab="trajets" data-role="both" data-i18n="nav_trajets">Trajets</button>
-    <button class="tab-btn" data-tab="rewards" data-role="both" data-i18n="nav_rewards">CO2 &amp; Points</button>
+    <button class="tab-btn active" data-tab="map" data-role="both"><span data-icon="map" data-icon-size="16"></span><span data-i18n="nav_map">Carte</span></button>
+    <button class="tab-btn" data-tab="driver" data-role="driver"><span data-icon="car" data-icon-size="16"></span><span data-i18n="nav_driver">Conducteur</span></button>
+    <button class="tab-btn" data-tab="passenger" data-role="passenger"><span data-icon="person" data-icon-size="16"></span><span data-i18n="nav_passenger">Passager</span></button>
+    <button class="tab-btn" data-tab="trajets" data-role="both"><span data-icon="list" data-icon-size="16"></span><span data-i18n="nav_trajets">Trajets</span></button>
+    <button class="tab-btn" data-tab="rewards" data-role="both"><span data-icon="leaf" data-icon-size="16"></span><span data-i18n="nav_rewards">CO2 &amp; Points</span></button>
   </nav>
 
   <div id="status-banner" class="status-banner" hidden></div>
@@ -62,7 +65,7 @@
 
     <section id="tab-driver" class="tab-panel">
       <div class="panel-card">
-        <h2 data-i18n="driver_title">Proposer un trajet</h2>
+        <h2><span data-icon="car" data-icon-size="20"></span><span data-i18n="driver_title">Proposer un trajet</span></h2>
         <form id="driver-form" class="stacked-form">
           <label>
             <span data-i18n="driver_name">Votre nom</span>
@@ -72,7 +75,7 @@
             <span data-i18n="driver_origin">Départ (adresse)</span>
             <div class="address-field">
               <input type="text" name="origin" required autocomplete="off" placeholder="ex. Place du Général de Gaulle, Lille" />
-              <span class="confirm-icon" hidden>✓</span>
+              <span class="confirm-icon" data-icon="check" data-icon-size="14" hidden></span>
               <ul class="autocomplete-list" hidden></ul>
             </div>
           </label>
@@ -80,7 +83,7 @@
             <span data-i18n="driver_destination">Arrivée (adresse)</span>
             <div class="address-field">
               <input type="text" name="destination" required autocomplete="off" placeholder="ex. Gare de Lille Europe" />
-              <span class="confirm-icon" hidden>✓</span>
+              <span class="confirm-icon" data-icon="check" data-icon-size="14" hidden></span>
               <ul class="autocomplete-list" hidden></ul>
             </div>
           </label>
@@ -115,7 +118,7 @@
             <span data-i18n="driver_note">Note (optionnel)</span>
             <textarea name="note" maxlength="200" rows="2"></textarea>
           </label>
-          <button type="submit" class="btn btn--primary" data-i18n="driver_submit">Publier le trajet</button>
+          <button type="submit" class="btn btn--primary"><span data-icon="plus" data-icon-size="16"></span><span data-i18n="driver_submit">Publier le trajet</span></button>
           <p id="driver-feedback" class="form-feedback"></p>
         </form>
       </div>
@@ -123,13 +126,13 @@
 
     <section id="tab-passenger" class="tab-panel">
       <div class="panel-card" id="passenger-suggestions-wrap" hidden>
-        <h2 id="passenger-suggestions-title" data-i18n="suggestions_title">Suggestions pour vous</h2>
+        <h2><span data-icon="bell" data-icon-size="20"></span><span id="passenger-suggestions-title" data-i18n="suggestions_title">Suggestions pour vous</span></h2>
         <p class="rewards-note" data-i18n="suggestions_desc">Ces trajets correspondent à votre itinéraire fixe.</p>
         <div id="passenger-suggestions" class="card-list"></div>
       </div>
 
       <div class="panel-card">
-        <h2 data-i18n="passenger_title">Trouver un trajet</h2>
+        <h2><span data-icon="search" data-icon-size="20"></span><span data-i18n="passenger_title">Trouver un trajet</span></h2>
         <form id="passenger-form" class="stacked-form stacked-form--inline">
           <label>
             <span data-i18n="passenger_yourName">Votre nom</span>
@@ -139,18 +142,18 @@
             <span data-i18n="passenger_address">Votre adresse</span>
             <div class="address-field">
               <input type="text" name="address" required autocomplete="off" placeholder="ex. Vieux-Lille" />
-              <span class="confirm-icon" hidden>✓</span>
+              <span class="confirm-icon" data-icon="check" data-icon-size="14" hidden></span>
               <ul class="autocomplete-list" hidden></ul>
             </div>
           </label>
-          <button type="submit" class="btn btn--primary" data-i18n="passenger_search">Rechercher</button>
+          <button type="submit" class="btn btn--primary"><span data-icon="search" data-icon-size="16"></span><span data-i18n="passenger_search">Rechercher</span></button>
         </form>
         <p id="passenger-feedback" class="form-feedback"></p>
         <div id="passenger-results" class="card-list"></div>
       </div>
 
       <div class="panel-card">
-        <h2 data-i18n="itinerary_title">Mon itinéraire fixe</h2>
+        <h2><span data-icon="calendar" data-icon-size="20"></span><span data-i18n="itinerary_title">Mon itinéraire fixe</span></h2>
         <p class="rewards-note" data-i18n="itinerary_desc">Enregistrez votre trajet habituel : on vous suggérera automatiquement les trajets qui passent sur votre route.</p>
         <form id="itinerary-form" class="stacked-form">
           <label>
@@ -161,7 +164,7 @@
             <span data-i18n="itinerary_address">Votre adresse habituelle</span>
             <div class="address-field">
               <input type="text" name="itineraryAddress" required autocomplete="off" placeholder="ex. Vieux-Lille" />
-              <span class="confirm-icon" hidden>✓</span>
+              <span class="confirm-icon" data-icon="check" data-icon-size="14" hidden></span>
               <ul class="autocomplete-list" hidden></ul>
             </div>
           </label>
@@ -180,8 +183,8 @@
             </label>
           </div>
           <div class="trajet-card__actions">
-            <button type="submit" class="btn btn--primary" data-i18n="itinerary_save">Enregistrer mon itinéraire</button>
-            <button type="button" id="itinerary-delete-btn" class="btn btn--danger" data-i18n="itinerary_delete" hidden>Supprimer</button>
+            <button type="submit" class="btn btn--primary"><span data-icon="check" data-icon-size="16"></span><span data-i18n="itinerary_save">Enregistrer mon itinéraire</span></button>
+            <button type="button" id="itinerary-delete-btn" class="btn btn--danger" hidden><span data-icon="trash" data-icon-size="16"></span><span data-i18n="itinerary_delete">Supprimer</span></button>
           </div>
           <p id="itinerary-feedback" class="form-feedback"></p>
         </form>
@@ -190,20 +193,22 @@
 
     <section id="tab-trajets" class="tab-panel">
       <div class="panel-card">
-        <h2 id="trajets-title" data-i18n="trajets_title">Trajets publiés</h2>
+        <h2><span data-icon="list" data-icon-size="20"></span><span id="trajets-title" data-i18n="trajets_title">Trajets publiés</span></h2>
         <div id="trajets-list" class="card-list"></div>
       </div>
     </section>
 
     <section id="tab-rewards" class="tab-panel">
       <div class="panel-card">
-        <h2 data-i18n="rewards_title">CO2 &amp; Récompenses</h2>
+        <h2><span data-icon="leaf" data-icon-size="20"></span><span data-i18n="rewards_title">CO2 &amp; Récompenses</span></h2>
         <div class="stat-tiles">
           <div class="stat-tile">
+            <span class="stat-tile__icon" data-icon="leaf" data-icon-size="20"></span>
             <div class="stat-tile__value" id="rewards-co2">0 kg</div>
             <div class="stat-tile__label" data-i18n="rewards_co2Saved">CO2 évité</div>
           </div>
           <div class="stat-tile stat-tile--points">
+            <span class="stat-tile__icon" data-icon="star" data-icon-size="20"></span>
             <div class="stat-tile__value" id="rewards-points">0</div>
             <div class="stat-tile__label" data-i18n="rewards_points">Points</div>
           </div>
@@ -224,6 +229,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="js/icons.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/stations.js"></script>
   <script src="js/routing.js"></script>

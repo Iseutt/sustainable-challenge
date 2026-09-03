@@ -402,7 +402,7 @@ function trajetCard(trajet, requests, opts = {}) {
 
   const viewBtn = document.createElement("button");
   viewBtn.className = "btn btn--secondary";
-  viewBtn.textContent = t("trajets_viewOnMap");
+  viewBtn.innerHTML = `${Icons.icon("mapPin", { size: 15 })}<span>${t("trajets_viewOnMap")}</span>`;
   viewBtn.onclick = () => {
     focusTrajet(trajet);
     switchTab("map");
@@ -427,7 +427,7 @@ function trajetCard(trajet, requests, opts = {}) {
 
     const reqBtn = document.createElement("button");
     reqBtn.className = "btn btn--primary";
-    reqBtn.textContent = t("passenger_request");
+    reqBtn.innerHTML = `${Icons.icon("check", { size: 15 })}<span>${t("passenger_request")}</span>`;
     reqBtn.disabled = left <= 0;
     reqBtn.onclick = () => {
       const stationId = opts.presetStationId || select.value;
@@ -447,7 +447,7 @@ function trajetCard(trajet, requests, opts = {}) {
         createdAt: new Date().toISOString(),
       });
       saveRequests(requests);
-      reqBtn.textContent = t("passenger_requested");
+      reqBtn.innerHTML = `${Icons.icon("check", { size: 15 })}<span>${t("passenger_requested")}</span>`;
       reqBtn.disabled = true;
       renderAll();
     };
@@ -457,7 +457,7 @@ function trajetCard(trajet, requests, opts = {}) {
   if (opts.deletable) {
     const delBtn = document.createElement("button");
     delBtn.className = "btn btn--danger";
-    delBtn.textContent = t("trajets_delete");
+    delBtn.innerHTML = `${Icons.icon("trash", { size: 15 })}<span>${t("trajets_delete")}</span>`;
     delBtn.onclick = () => {
       saveTrajets(loadTrajets().filter((tj) => tj.id !== trajet.id));
       saveRequests(loadRequests().filter((r) => r.trajetId !== trajet.id));
@@ -505,7 +505,7 @@ function requestsPanel(trajet, requests) {
       const full = seatsTaken(trajet.id, requests) >= trajet.seats;
       const acceptBtn = document.createElement("button");
       acceptBtn.className = "btn btn--secondary btn--sm";
-      acceptBtn.textContent = t("request_accept");
+      acceptBtn.innerHTML = `${Icons.icon("check", { size: 13 })}<span>${t("request_accept")}</span>`;
       acceptBtn.disabled = full;
       acceptBtn.onclick = () => {
         updateRequestStatus(r.id, "accepted");
@@ -513,7 +513,7 @@ function requestsPanel(trajet, requests) {
       };
       const declineBtn = document.createElement("button");
       declineBtn.className = "btn btn--danger btn--sm";
-      declineBtn.textContent = t("request_decline");
+      declineBtn.innerHTML = `${Icons.icon("x", { size: 13 })}<span>${t("request_decline")}</span>`;
       declineBtn.onclick = () => {
         updateRequestStatus(r.id, "declined");
         renderAll();
@@ -975,6 +975,7 @@ document.addEventListener("langchange", () => {
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
+  Icons.applyIcons();
   applyTranslations();
   initLanguageSwitcher();
   initTabs();
