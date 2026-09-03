@@ -26,16 +26,22 @@
     <h2 data-i18n="landing_title">Vous êtes...</h2>
     <p class="landing__subtitle" data-i18n="landing_subtitle">Choisissez votre profil pour commencer.</p>
     <div class="landing__choices">
-      <button id="role-driver-btn" class="role-card">
+      <div class="role-card role-card--driver">
         <span class="role-card__icon" aria-hidden="true">🚗</span>
         <span class="role-card__title" data-i18n="landing_driver">Je suis conducteur</span>
         <span class="role-card__desc" data-i18n="landing_driverDesc">Proposez un trajet et prenez des passagers sur votre route.</span>
-      </button>
-      <button id="role-passenger-btn" class="role-card">
+        <button id="role-driver-btn" class="btn btn--primary role-card__cta" data-i18n="landing_continue">Continuer</button>
+      </div>
+      <div class="role-card role-card--passenger">
         <span class="role-card__icon" aria-hidden="true">🧍</span>
         <span class="role-card__title" data-i18n="landing_passenger">Je suis passager</span>
         <span class="role-card__desc" data-i18n="landing_passengerDesc">Trouvez un trajet qui passe près de chez vous.</span>
-      </button>
+        <label class="role-card__check">
+          <input type="checkbox" id="passenger-has-car-checkbox" />
+          <span data-i18n="landing_hasCarLabel">Je possède une voiture (nécessaire pour calculer le CO2 que vous évitez)</span>
+        </label>
+        <button id="role-passenger-btn" class="btn btn--primary role-card__cta" data-i18n="landing_continue" disabled>Continuer</button>
+      </div>
     </div>
   </section>
 
@@ -44,7 +50,7 @@
     <button class="tab-btn" data-tab="driver" data-role="driver" data-i18n="nav_driver">Conducteur</button>
     <button class="tab-btn" data-tab="passenger" data-role="passenger" data-i18n="nav_passenger">Passager</button>
     <button class="tab-btn" data-tab="trajets" data-role="both" data-i18n="nav_trajets">Trajets</button>
-    <button class="tab-btn" data-tab="rewards" data-role="driver" data-i18n="nav_rewards">CO2 &amp; Points</button>
+    <button class="tab-btn" data-tab="rewards" data-role="both" data-i18n="nav_rewards">CO2 &amp; Points</button>
   </nav>
 
   <div id="status-banner" class="status-banner" hidden></div>
@@ -78,14 +84,16 @@
               <ul class="autocomplete-list" hidden></ul>
             </div>
           </label>
-          <label>
-            <span data-i18n="driver_datetime">Date et heure de départ</span>
-            <input type="datetime-local" name="datetime" required />
-          </label>
-          <label>
-            <span data-i18n="driver_seats">Places disponibles</span>
-            <input type="number" name="seats" min="1" max="8" value="3" required />
-          </label>
+          <div class="form-row">
+            <label>
+              <span data-i18n="driver_datetime">Date et heure de départ</span>
+              <input type="datetime-local" name="datetime" required />
+            </label>
+            <label>
+              <span data-i18n="driver_seats">Places disponibles</span>
+              <input type="number" name="seats" min="1" max="8" value="3" required />
+            </label>
+          </div>
           <label>
             <span data-i18n="driver_note">Note (optionnel)</span>
             <textarea name="note" maxlength="200" rows="2"></textarea>
@@ -130,7 +138,7 @@
             <div class="stat-tile__value" id="rewards-co2">0 kg</div>
             <div class="stat-tile__label" data-i18n="rewards_co2Saved">CO2 évité</div>
           </div>
-          <div class="stat-tile">
+          <div class="stat-tile stat-tile--points">
             <div class="stat-tile__value" id="rewards-points">0</div>
             <div class="stat-tile__label" data-i18n="rewards_points">Points</div>
           </div>
@@ -139,6 +147,7 @@
           <div class="rewards-progress__bar"><div class="rewards-progress__fill" id="rewards-progress-fill"></div></div>
           <p class="rewards-progress__label" id="rewards-progress-label"></p>
         </div>
+        <p class="rewards-boost" id="rewards-boost-note" hidden data-i18n="rewards_passengerBoostNote">En tant que passager, vous gagnez plus de points par trajet qu'un conducteur : c'est vous qui laissez votre voiture au garage !</p>
         <p class="rewards-note" data-i18n="rewards_comingSoon">Les bons de réduction arrivent bientôt : convertissez vos points contre des avantages chez nos partenaires.</p>
         <div class="ad-placeholders">
           <div class="ad-placeholder"><span data-i18n="ads_placeholder">Espace sponsor disponible</span></div>

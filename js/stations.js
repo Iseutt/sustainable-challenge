@@ -123,7 +123,9 @@ const Stations = (() => {
     return allStations;
   }
 
-  const ICON_COLORS = { train: "#c0392b", tram: "#2471a3", bus: "#1e8449" };
+  // Ilévia (Lille public transport) brand hues, taken from the official
+  // 2019 logo SVG, so station markers match the real network's colors.
+  const ICON_COLORS = { train: "#db281c", tram: "#10a2dc", bus: "#97c11d" };
   const ICON_LETTER = { train: "T", tram: "R", bus: "B" };
 
   function makeIcon(type, highlighted = false) {

@@ -4,6 +4,7 @@
 const TRAJETS_KEY = "carpool_trajets";
 const REQUESTS_KEY = "carpool_requests";
 const ROLE_KEY = "carpool_role";
+const HAS_CAR_KEY = "carpool_hasCar";
 const PASSENGER_SEARCH_RADIUS_M = 1000; // how far a passenger may be from a matched station
 const DEFAULT_PICKUP_RADIUS_M = 350; // fixed now that drivers no longer set a radius themselves
 const ROUTE_COLORS = ["#8e44ad", "#d35400", "#16a085", "#2c3e50", "#c0392b", "#2471a3"];
@@ -70,19 +71,25 @@ function priceForStation(trajet, stationId) {
   const distanceKm = Pricing.remainingDistanceKm(trajet, cumulative);
   const priceEUR = Pricing.computePrice(distanceKm);
   const co2Kg = Pricing.computeCO2Kg(distanceKm);
-  const points = Pricing.computePoints(co2Kg);
-  return { distanceKm, priceEUR, co2Kg, points };
+  const driverPoints = Pricing.computeDriverPoints(co2Kg);
+  const passengerPoints = Pricing.computePassengerPoints(co2Kg);
+  return { distanceKm, priceEUR, co2Kg, driverPoints, passengerPoints };
 }
 
+// Both roles are rewarded from the same avoided CO2, but the passenger
+// (who actually left their car at home) earns points at a higher rate than
+// the driver (who gets a smaller "host" bonus) — see js/pricing.js.
 function renderRewards() {
   const co2El = document.getElementById("rewards-co2");
   if (!co2El) return;
+  const role = getRole();
+  const pointsField = role === "passenger" ? "passengerPoints" : "driverPoints";
   const requests = loadRequests();
   let co2 = 0;
   let points = 0;
   requests.forEach((r) => {
     co2 += r.co2Kg || 0;
-    points += r.points || 0;
+    points += r[pointsField] || 0;
   });
   co2El.textContent = `${co2.toFixed(1)} kg`;
   document.getElementById("rewards-points").textContent = Math.round(points);
@@ -92,6 +99,9 @@ function renderRewards() {
   document.getElementById("rewards-progress-fill").style.width = `${pct}%`;
   document.getElementById("rewards-progress-label").textContent =
     `${Math.round(progressPoints)} / ${Pricing.POINTS_PER_REWARD} ${t("rewards_towardNext")} (${Pricing.REWARD_EUR}€)`;
+
+  const boostNote = document.getElementById("rewards-boost-note");
+  if (boostNote) boostNote.hidden = role !== "passenger";
 }
 
 // ---------- Map + station init ----------
@@ -184,13 +194,6 @@ function trajetCard(trajet, requests, opts = {}) {
   }
   card.appendChild(route);
 
-  if (trajet.originResolved || trajet.destResolved) {
-    const resolved = document.createElement("div");
-    resolved.className = "trajet-card__resolved";
-    resolved.textContent = `${t("driver_resolvedAs")}: ${trajet.originResolved} → ${trajet.destResolved}`;
-    card.appendChild(resolved);
-  }
-
   if (trajet.note) {
     const note = document.createElement("div");
     note.className = "trajet-card__note";
@@ -268,7 +271,7 @@ function trajetCard(trajet, requests, opts = {}) {
     reqBtn.disabled = left <= 0;
     reqBtn.onclick = () => {
       const stationId = opts.presetStationId || select.value;
-      const { priceEUR, distanceKm, co2Kg, points } = priceForStation(trajet, stationId);
+      const { priceEUR, distanceKm, co2Kg, driverPoints, passengerPoints } = priceForStation(trajet, stationId);
       const requests = loadRequests();
       requests.push({
         id: uid(),
@@ -277,7 +280,8 @@ function trajetCard(trajet, requests, opts = {}) {
         priceEUR,
         distanceKm,
         co2Kg,
-        points,
+        driverPoints,
+        passengerPoints,
         createdAt: new Date().toISOString(),
       });
       saveRequests(requests);
@@ -552,8 +556,25 @@ function clearRole() {
 
 function initRoleSelection() {
   document.getElementById("role-driver-btn").addEventListener("click", () => setRole("driver"));
-  document.getElementById("role-passenger-btn").addEventListener("click", () => setRole("passenger"));
   document.getElementById("switch-role-btn").addEventListener("click", () => clearRole());
+
+  const carCheckbox = document.getElementById("passenger-has-car-checkbox");
+  const passengerBtn = document.getElementById("role-passenger-btn");
+
+  // Returning users who already confirmed car ownership aren't re-prompted.
+  const hasCar = localStorage.getItem(HAS_CAR_KEY) === "1";
+  carCheckbox.checked = hasCar;
+  passengerBtn.disabled = !hasCar;
+
+  carCheckbox.addEventListener("change", () => {
+    passengerBtn.disabled = !carCheckbox.checked;
+  });
+
+  passengerBtn.addEventListener("click", () => {
+    if (!carCheckbox.checked) return;
+    localStorage.setItem(HAS_CAR_KEY, "1");
+    setRole("passenger");
+  });
 }
 
 // ---------- Global render ----------
