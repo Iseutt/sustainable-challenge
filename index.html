@@ -16,19 +16,40 @@
       <h1 data-i18n="appTitle">CoVoiturage Lille</h1>
       <p class="app-header__tagline" data-i18n="appTagline">Rejoignez un trajet, prenez le bus, le tram ou le train ensemble.</p>
     </div>
-    <select id="lang-switcher" aria-label="Language"></select>
+    <div class="app-header__actions">
+      <button id="switch-role-btn" class="btn btn--ghost" data-i18n="nav_switchRole" hidden>Changer de profil</button>
+      <select id="lang-switcher" aria-label="Language"></select>
+    </div>
   </header>
 
-  <nav class="tab-bar">
-    <button class="tab-btn active" data-tab="map" data-i18n="nav_map">Carte</button>
-    <button class="tab-btn" data-tab="driver" data-i18n="nav_driver">Conducteur</button>
-    <button class="tab-btn" data-tab="passenger" data-i18n="nav_passenger">Passager</button>
-    <button class="tab-btn" data-tab="trajets" data-i18n="nav_trajets">Trajets</button>
+  <section id="landing" class="landing">
+    <h2 data-i18n="landing_title">Vous êtes...</h2>
+    <p class="landing__subtitle" data-i18n="landing_subtitle">Choisissez votre profil pour commencer.</p>
+    <div class="landing__choices">
+      <button id="role-driver-btn" class="role-card">
+        <span class="role-card__icon" aria-hidden="true">🚗</span>
+        <span class="role-card__title" data-i18n="landing_driver">Je suis conducteur</span>
+        <span class="role-card__desc" data-i18n="landing_driverDesc">Proposez un trajet et prenez des passagers sur votre route.</span>
+      </button>
+      <button id="role-passenger-btn" class="role-card">
+        <span class="role-card__icon" aria-hidden="true">🧍</span>
+        <span class="role-card__title" data-i18n="landing_passenger">Je suis passager</span>
+        <span class="role-card__desc" data-i18n="landing_passengerDesc">Trouvez un trajet qui passe près de chez vous.</span>
+      </button>
+    </div>
+  </section>
+
+  <nav class="tab-bar" id="tab-bar" hidden>
+    <button class="tab-btn active" data-tab="map" data-role="both" data-i18n="nav_map">Carte</button>
+    <button class="tab-btn" data-tab="driver" data-role="driver" data-i18n="nav_driver">Conducteur</button>
+    <button class="tab-btn" data-tab="passenger" data-role="passenger" data-i18n="nav_passenger">Passager</button>
+    <button class="tab-btn" data-tab="trajets" data-role="both" data-i18n="nav_trajets">Trajets</button>
+    <button class="tab-btn" data-tab="rewards" data-role="driver" data-i18n="nav_rewards">CO2 &amp; Points</button>
   </nav>
 
   <div id="status-banner" class="status-banner" hidden></div>
 
-  <main class="app-main">
+  <main class="app-main" id="app-main" hidden>
     <section id="tab-map" class="tab-panel active">
       <div id="map"></div>
     </section>
@@ -43,11 +64,19 @@
           </label>
           <label>
             <span data-i18n="driver_origin">Départ (adresse)</span>
-            <input type="text" name="origin" required placeholder="ex. Place du Général de Gaulle, Lille" />
+            <div class="address-field">
+              <input type="text" name="origin" required autocomplete="off" placeholder="ex. Place du Général de Gaulle, Lille" />
+              <span class="confirm-icon" hidden>✓</span>
+              <ul class="autocomplete-list" hidden></ul>
+            </div>
           </label>
           <label>
             <span data-i18n="driver_destination">Arrivée (adresse)</span>
-            <input type="text" name="destination" required placeholder="ex. Gare de Lille Europe" />
+            <div class="address-field">
+              <input type="text" name="destination" required autocomplete="off" placeholder="ex. Gare de Lille Europe" />
+              <span class="confirm-icon" hidden>✓</span>
+              <ul class="autocomplete-list" hidden></ul>
+            </div>
           </label>
           <label>
             <span data-i18n="driver_datetime">Date et heure de départ</span>
@@ -56,10 +85,6 @@
           <label>
             <span data-i18n="driver_seats">Places disponibles</span>
             <input type="number" name="seats" min="1" max="8" value="3" required />
-          </label>
-          <label>
-            <span data-i18n="driver_radius">Rayon de prise en charge (m)</span>
-            <input type="number" name="radius" min="50" max="1500" step="50" value="300" required />
           </label>
           <label>
             <span data-i18n="driver_note">Note (optionnel)</span>
@@ -77,7 +102,11 @@
         <form id="passenger-form" class="stacked-form stacked-form--inline">
           <label class="grow">
             <span data-i18n="passenger_address">Votre adresse</span>
-            <input type="text" name="address" required placeholder="ex. Vieux-Lille" />
+            <div class="address-field">
+              <input type="text" name="address" required autocomplete="off" placeholder="ex. Vieux-Lille" />
+              <span class="confirm-icon" hidden>✓</span>
+              <ul class="autocomplete-list" hidden></ul>
+            </div>
           </label>
           <button type="submit" class="btn btn--primary" data-i18n="passenger_search">Rechercher</button>
         </form>
@@ -88,8 +117,33 @@
 
     <section id="tab-trajets" class="tab-panel">
       <div class="panel-card">
-        <h2 data-i18n="trajets_title">Trajets publiés</h2>
+        <h2 id="trajets-title" data-i18n="trajets_title">Trajets publiés</h2>
         <div id="trajets-list" class="card-list"></div>
+      </div>
+    </section>
+
+    <section id="tab-rewards" class="tab-panel">
+      <div class="panel-card">
+        <h2 data-i18n="rewards_title">CO2 &amp; Récompenses</h2>
+        <div class="stat-tiles">
+          <div class="stat-tile">
+            <div class="stat-tile__value" id="rewards-co2">0 kg</div>
+            <div class="stat-tile__label" data-i18n="rewards_co2Saved">CO2 évité</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-tile__value" id="rewards-points">0</div>
+            <div class="stat-tile__label" data-i18n="rewards_points">Points</div>
+          </div>
+        </div>
+        <div class="rewards-progress">
+          <div class="rewards-progress__bar"><div class="rewards-progress__fill" id="rewards-progress-fill"></div></div>
+          <p class="rewards-progress__label" id="rewards-progress-label"></p>
+        </div>
+        <p class="rewards-note" data-i18n="rewards_comingSoon">Les bons de réduction arrivent bientôt : convertissez vos points contre des avantages chez nos partenaires.</p>
+        <div class="ad-placeholders">
+          <div class="ad-placeholder"><span data-i18n="ads_placeholder">Espace sponsor disponible</span></div>
+          <div class="ad-placeholder"><span data-i18n="ads_placeholder">Espace sponsor disponible</span></div>
+        </div>
       </div>
     </section>
   </main>
@@ -99,6 +153,7 @@
   <script src="js/i18n.js"></script>
   <script src="js/stations.js"></script>
   <script src="js/routing.js"></script>
+  <script src="js/pricing.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

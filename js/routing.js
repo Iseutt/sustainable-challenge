@@ -52,6 +52,8 @@ const Routing = (() => {
     return { x, y };
   }
 
+  // Returns { distance, t } where t in [0,1] is how far along segment a->b
+  // the closest point to p falls (used to derive cumulative route distance).
   function distancePointToSegment(p, a, b) {
     const refLat = a.lat;
     const P = project(p.lat, p.lon, refLat);
@@ -64,25 +66,44 @@ const Routing = (() => {
     t = Math.max(0, Math.min(1, t));
     const cx = A.x + t * dx;
     const cy = A.y + t * dy;
-    return Math.hypot(P.x - cx, P.y - cy);
+    return { distance: Math.hypot(P.x - cx, P.y - cy), t };
   }
 
-  function minDistanceToRoute(lat, lon, routeCoords) {
-    let min = Infinity;
+  // Precomputes per-segment lengths and prefix sums once per route so that,
+  // for any point, we can cheaply derive both its distance to the route and
+  // its cumulative distance along the route (needed for pricing/CO2, which
+  // depend on how much of the route remains after a given station).
+  function routeSegments(routeCoords) {
+    const lengths = [];
+    const prefix = [0];
+    for (let i = 0; i < routeCoords.length - 1; i++) {
+      const len = haversine(routeCoords[i][0], routeCoords[i][1], routeCoords[i + 1][0], routeCoords[i + 1][1]);
+      lengths.push(len);
+      prefix.push(prefix[i] + len);
+    }
+    return { lengths, prefix };
+  }
+
+  function closestPointOnRoute(lat, lon, routeCoords, segments) {
+    let best = { distance: Infinity, cumulative: 0 };
     for (let i = 0; i < routeCoords.length - 1; i++) {
       const a = { lat: routeCoords[i][0], lon: routeCoords[i][1] };
       const b = { lat: routeCoords[i + 1][0], lon: routeCoords[i + 1][1] };
-      const d = distancePointToSegment({ lat, lon }, a, b);
-      if (d < min) min = d;
-      if (min === 0) break;
+      const { distance, t } = distancePointToSegment({ lat, lon }, a, b);
+      if (distance < best.distance) {
+        best = { distance, cumulative: segments.prefix[i] + t * segments.lengths[i] };
+        if (distance === 0) break;
+      }
     }
-    return min;
+    return best;
   }
 
   // Returns stations within radiusMeters of the route, each augmented with
-  // a `distance` field (meters), sorted nearest-first. Pre-filters by a
-  // padded bounding box first since routes can have hundreds of stations
-  // to check against.
+  // `distance` (meters to the route) and `cumulativeMeters` (distance from
+  // the route's start to the station's closest point, used to derive how
+  // much of the trip remains for pricing/CO2). Sorted nearest-first.
+  // Pre-filters by a padded bounding box first since routes can have
+  // hundreds of stations to check against.
   function findStationsNearRoute(routeCoords, stations, radiusMeters) {
     let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
     for (const [lat, lon] of routeCoords) {
@@ -99,14 +120,138 @@ const Routing = (() => {
       (s) => s.lat >= minLat && s.lat <= maxLat && s.lon >= minLon && s.lon <= maxLon
     );
 
+    const segments = routeSegments(routeCoords);
     const results = [];
     for (const s of candidates) {
-      const d = minDistanceToRoute(s.lat, s.lon, routeCoords);
-      if (d <= radiusMeters) results.push({ ...s, distance: d });
+      const { distance, cumulative } = closestPointOnRoute(s.lat, s.lon, routeCoords, segments);
+      if (distance <= radiusMeters) results.push({ ...s, distance, cumulativeMeters: cumulative });
     }
     results.sort((a, b) => a.distance - b.distance);
     return results;
   }
 
-  return { geocodeAddress, fetchRoute, haversine, findStationsNearRoute };
+  // ---------- Address autocomplete ----------
+
+  const resolvedByInput = new WeakMap();
+  const AUTOCOMPLETE_DEBOUNCE_MS = 400;
+  const AUTOCOMPLETE_MIN_CHARS = 3;
+
+  function getResolved(inputEl) {
+    return resolvedByInput.get(inputEl) || null;
+  }
+
+  function shortLabel(displayName) {
+    return displayName.split(",").slice(0, 3).join(",");
+  }
+
+  // Wires a debounced Nominatim suggestion dropdown onto a text input.
+  // Requires the input to be wrapped in an element with class
+  // "address-field" containing a sibling ".autocomplete-list" <ul> and a
+  // ".confirm-icon" element (see index.html). Calling getResolved(inputEl)
+  // afterwards returns the {lat, lon, displayName} of the picked suggestion,
+  // or null if the user hasn't confirmed one (caller should then fall back
+  // to a plain geocodeAddress call).
+  function attachAutocomplete(inputEl) {
+    const wrap = inputEl.closest(".address-field");
+    const list = wrap && wrap.querySelector(".autocomplete-list");
+    const confirmIcon = wrap && wrap.querySelector(".confirm-icon");
+    if (!list) return;
+
+    let debounceTimer = null;
+    let activeIndex = -1;
+    let currentResults = [];
+
+    function setConfirmed(isConfirmed) {
+      wrap.classList.toggle("address-field--confirmed", isConfirmed);
+      if (confirmIcon) confirmIcon.hidden = !isConfirmed;
+    }
+
+    function closeList() {
+      list.innerHTML = "";
+      list.hidden = true;
+      activeIndex = -1;
+      currentResults = [];
+    }
+
+    function renderList(results) {
+      currentResults = results;
+      activeIndex = -1;
+      list.innerHTML = "";
+      results.forEach((r, i) => {
+        const li = document.createElement("li");
+        li.className = "autocomplete-item";
+        li.textContent = shortLabel(r.display_name);
+        li.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          pick(r);
+        });
+        list.appendChild(li);
+      });
+      list.hidden = results.length === 0;
+    }
+
+    function highlight(index) {
+      [...list.children].forEach((li, i) => li.classList.toggle("autocomplete-item--active", i === index));
+      activeIndex = index;
+    }
+
+    function pick(r) {
+      const resolved = { lat: parseFloat(r.lat), lon: parseFloat(r.lon), displayName: r.display_name };
+      resolvedByInput.set(inputEl, resolved);
+      inputEl.value = shortLabel(r.display_name);
+      setConfirmed(true);
+      closeList();
+    }
+
+    inputEl.addEventListener("input", () => {
+      resolvedByInput.delete(inputEl);
+      setConfirmed(false);
+      clearTimeout(debounceTimer);
+      const query = inputEl.value.trim();
+      if (query.length < AUTOCOMPLETE_MIN_CHARS) {
+        closeList();
+        return;
+      }
+      debounceTimer = setTimeout(async () => {
+        try {
+          const url = `${NOMINATIM_URL}?format=json&limit=5&countrycodes=fr&viewbox=${MEL_VIEWBOX}&q=${encodeURIComponent(query)}`;
+          const res = await fetch(url, { headers: { Accept: "application/json" } });
+          if (!res.ok) return;
+          const results = await res.json();
+          renderList(results);
+        } catch {
+          // Silent: autocomplete is a convenience, not required for submit.
+        }
+      }, AUTOCOMPLETE_DEBOUNCE_MS);
+    });
+
+    inputEl.addEventListener("keydown", (e) => {
+      if (list.hidden || !currentResults.length) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        highlight(Math.min(activeIndex + 1, currentResults.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        highlight(Math.max(activeIndex - 1, 0));
+      } else if (e.key === "Enter") {
+        if (activeIndex >= 0) {
+          e.preventDefault();
+          pick(currentResults[activeIndex]);
+        }
+      } else if (e.key === "Escape") {
+        closeList();
+      }
+    });
+
+    inputEl.addEventListener("blur", () => setTimeout(closeList, 100));
+  }
+
+  return {
+    geocodeAddress,
+    fetchRoute,
+    haversine,
+    findStationsNearRoute,
+    attachAutocomplete,
+    getResolved,
+  };
 })();

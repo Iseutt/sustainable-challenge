@@ -1,8 +1,11 @@
-// App state, driver/passenger forms, localStorage persistence, and map wiring.
+// App state, landing/role selection, driver/passenger forms, pricing/CO2,
+// localStorage persistence, and map wiring.
 
 const TRAJETS_KEY = "carpool_trajets";
 const REQUESTS_KEY = "carpool_requests";
+const ROLE_KEY = "carpool_role";
 const PASSENGER_SEARCH_RADIUS_M = 1000; // how far a passenger may be from a matched station
+const DEFAULT_PICKUP_RADIUS_M = 350; // fixed now that drivers no longer set a radius themselves
 const ROUTE_COLORS = ["#8e44ad", "#d35400", "#16a085", "#2c3e50", "#c0392b", "#2471a3"];
 
 const LOCALE_MAP = { fr: "fr-FR", en: "en-GB", de: "de-DE", nl: "nl-NL", vls: "nl-BE" };
@@ -60,6 +63,37 @@ function setStatus(message, kind = "info") {
   el.hidden = false;
 }
 
+// ---------- Pricing / CO2 helpers ----------
+
+function priceForStation(trajet, stationId) {
+  const cumulative = (trajet.stationCumulative || {})[stationId] || 0;
+  const distanceKm = Pricing.remainingDistanceKm(trajet, cumulative);
+  const priceEUR = Pricing.computePrice(distanceKm);
+  const co2Kg = Pricing.computeCO2Kg(distanceKm);
+  const points = Pricing.computePoints(co2Kg);
+  return { distanceKm, priceEUR, co2Kg, points };
+}
+
+function renderRewards() {
+  const co2El = document.getElementById("rewards-co2");
+  if (!co2El) return;
+  const requests = loadRequests();
+  let co2 = 0;
+  let points = 0;
+  requests.forEach((r) => {
+    co2 += r.co2Kg || 0;
+    points += r.points || 0;
+  });
+  co2El.textContent = `${co2.toFixed(1)} kg`;
+  document.getElementById("rewards-points").textContent = Math.round(points);
+
+  const progressPoints = points % Pricing.POINTS_PER_REWARD;
+  const pct = (progressPoints / Pricing.POINTS_PER_REWARD) * 100;
+  document.getElementById("rewards-progress-fill").style.width = `${pct}%`;
+  document.getElementById("rewards-progress-label").textContent =
+    `${Math.round(progressPoints)} / ${Pricing.POINTS_PER_REWARD} ${t("rewards_towardNext")} (${Pricing.REWARD_EUR}€)`;
+}
+
 // ---------- Map + station init ----------
 
 async function initMap() {
@@ -87,10 +121,11 @@ async function initMap() {
 // ---------- Rendering trajets on the map ----------
 
 function clearRouteLayer() {
-  routesLayer.clearLayers();
+  if (routesLayer) routesLayer.clearLayers();
 }
 
 function renderTrajetsOnMap(trajets) {
+  if (!routesLayer) return;
   clearRouteLayer();
   trajets.forEach((trajet, i) => {
     const color = ROUTE_COLORS[i % ROUTE_COLORS.length];
@@ -110,8 +145,9 @@ function renderTrajetsOnMap(trajets) {
         fillColor: "#fff",
         fillOpacity: 1,
       });
+      const { priceEUR, distanceKm } = priceForStation(trajet, sid);
       marker.bindPopup(
-        `<strong>${st.name || Stations.labelFor(st.type)}</strong><br>${t("popup_driver")}: ${trajet.driverName}<br>${t("popup_departure")}: ${fmtDateTime(trajet.datetime)}`
+        `<strong>${st.name || Stations.labelFor(st.type)}</strong><br>${t("popup_driver")}: ${trajet.driverName}<br>${t("popup_departure")}: ${fmtDateTime(trajet.datetime)}<br>${priceEUR.toFixed(2)} € · ${distanceKm.toFixed(1)} km`
       );
       marker.addTo(routesLayer);
     });
@@ -121,7 +157,6 @@ function renderTrajetsOnMap(trajets) {
 function focusTrajet(trajet) {
   const bounds = L.latLngBounds(trajet.routeCoords);
   map.fitBounds(bounds, { padding: [40, 40] });
-  document.querySelector('.tab-btn[data-tab="map"]');
 }
 
 // ---------- Trajet card (shared by Trajets tab + passenger search results) ----------
@@ -168,6 +203,9 @@ function trajetCard(trajet, requests, opts = {}) {
   seatsEl.textContent = left > 0 ? `${left} ${t("passenger_seatsLeft")}` : t("passenger_full");
   card.appendChild(seatsEl);
 
+  let priceEl = null;
+  let select = null;
+
   if (stations.length) {
     const stLabel = document.createElement("div");
     stLabel.className = "trajet-card__stations-label";
@@ -184,6 +222,16 @@ function trajetCard(trajet, requests, opts = {}) {
       chips.appendChild(chip);
     });
     card.appendChild(chips);
+
+    priceEl = document.createElement("div");
+    priceEl.className = "trajet-card__price";
+    card.appendChild(priceEl);
+  }
+
+  function updatePrice(stationId) {
+    if (!priceEl || !stationId) return;
+    const { priceEUR, distanceKm } = priceForStation(trajet, stationId);
+    priceEl.textContent = `${priceEUR.toFixed(2)} € · ${distanceKm.toFixed(1)} km`;
   }
 
   const actions = document.createElement("div");
@@ -199,7 +247,6 @@ function trajetCard(trajet, requests, opts = {}) {
   actions.appendChild(viewBtn);
 
   if (stations.length) {
-    let select = null;
     if (!opts.presetStationId) {
       select = document.createElement("select");
       select.className = "station-select";
@@ -209,8 +256,11 @@ function trajetCard(trajet, requests, opts = {}) {
         o.textContent = s.name || Stations.labelFor(s.type);
         select.appendChild(o);
       });
+      select.addEventListener("change", () => updatePrice(select.value));
       actions.appendChild(select);
     }
+
+    updatePrice(opts.presetStationId || (stations[0] && stations[0].id));
 
     const reqBtn = document.createElement("button");
     reqBtn.className = "btn btn--primary";
@@ -218,8 +268,18 @@ function trajetCard(trajet, requests, opts = {}) {
     reqBtn.disabled = left <= 0;
     reqBtn.onclick = () => {
       const stationId = opts.presetStationId || select.value;
+      const { priceEUR, distanceKm, co2Kg, points } = priceForStation(trajet, stationId);
       const requests = loadRequests();
-      requests.push({ id: uid(), trajetId: trajet.id, stationId, createdAt: new Date().toISOString() });
+      requests.push({
+        id: uid(),
+        trajetId: trajet.id,
+        stationId,
+        priceEUR,
+        distanceKm,
+        co2Kg,
+        points,
+        createdAt: new Date().toISOString(),
+      });
       saveRequests(requests);
       reqBtn.textContent = t("passenger_requested");
       reqBtn.disabled = true;
@@ -252,6 +312,10 @@ function renderTrajetsList() {
   const trajets = loadTrajets();
   const requests = loadRequests();
   const list = document.getElementById("trajets-list");
+  const titleEl = document.getElementById("trajets-title");
+  if (titleEl) {
+    titleEl.textContent = getRole() === "driver" ? t("trajets_titleDriver") : t("trajets_titlePassenger");
+  }
   list.innerHTML = "";
   if (!trajets.length) {
     const empty = document.createElement("p");
@@ -266,19 +330,31 @@ function renderTrajetsList() {
     .forEach((trajet) => list.appendChild(trajetCard(trajet, requests, { deletable: true })));
 }
 
+// ---------- Address field reset helper ----------
+
+function resetAddressFields(form) {
+  form.querySelectorAll(".address-field").forEach((wrap) => {
+    wrap.classList.remove("address-field--confirmed");
+    const icon = wrap.querySelector(".confirm-icon");
+    if (icon) icon.hidden = true;
+  });
+}
+
 // ---------- Driver form ----------
 
 function initDriverForm() {
   const form = document.getElementById("driver-form");
+  const originInput = form.querySelector('[name="origin"]');
+  const destInput = form.querySelector('[name="destination"]');
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const fd = new FormData(form);
     const name = fd.get("name").trim();
-    const originText = fd.get("origin").trim();
-    const destText = fd.get("destination").trim();
+    const originText = originInput.value.trim();
+    const destText = destInput.value.trim();
     const datetime = fd.get("datetime");
     const seats = parseInt(fd.get("seats"), 10);
-    const radius = parseInt(fd.get("radius"), 10) || 300;
     const note = (fd.get("note") || "").trim();
 
     const feedback = document.getElementById("driver-feedback");
@@ -288,17 +364,24 @@ function initDriverForm() {
 
     try {
       feedback.textContent = t("driver_geocoding");
+      const originCached = Routing.getResolved(originInput);
+      const destCached = Routing.getResolved(destInput);
       const [origin, destination] = await Promise.all([
-        Routing.geocodeAddress(originText),
-        Routing.geocodeAddress(destText),
+        originCached ? Promise.resolve(originCached) : Routing.geocodeAddress(originText),
+        destCached ? Promise.resolve(destCached) : Routing.geocodeAddress(destText),
       ]);
       if (!origin || !destination) throw new Error("geocode-failed");
+      const confirmed = !!(originCached && destCached);
 
       feedback.textContent = t("driver_routing");
       const route = await Routing.fetchRoute(origin, destination);
       if (!route) throw new Error("route-failed");
 
-      const nearStations = Routing.findStationsNearRoute(route.coords, allStations, radius);
+      const nearStations = Routing.findStationsNearRoute(route.coords, allStations, DEFAULT_PICKUP_RADIUS_M);
+      const stationCumulative = {};
+      nearStations.forEach((s) => {
+        stationCumulative[s.id] = s.cumulativeMeters;
+      });
 
       const trajet = {
         id: uid(),
@@ -313,12 +396,13 @@ function initDriverForm() {
         destResolved: destination.displayName,
         datetime,
         seats,
-        radius,
         note,
         routeCoords: route.coords,
         distanceMeters: route.distanceMeters,
         durationSeconds: route.durationSeconds,
         stationIds: nearStations.map((s) => s.id),
+        stationCumulative,
+        addressesConfirmed: confirmed,
         createdAt: new Date().toISOString(),
       };
 
@@ -328,10 +412,12 @@ function initDriverForm() {
 
       feedback.classList.add("form-feedback--success");
       const resolvedLine = `${t("driver_resolvedAs")}: ${origin.displayName} → ${destination.displayName}`;
+      const unconfirmedNote = confirmed ? "" : ` ${t("driver_unconfirmedNote")}`;
       feedback.textContent = nearStations.length
-        ? `${t("driver_success")} ${resolvedLine}`
-        : `${t("driver_success")} ${t("driver_noStations")} ${resolvedLine}`;
+        ? `${t("driver_success")} ${resolvedLine}${unconfirmedNote}`
+        : `${t("driver_success")} ${t("driver_noStations")} ${resolvedLine}${unconfirmedNote}`;
       form.reset();
+      resetAddressFields(form);
       renderAll();
       focusTrajet(trajet);
     } catch (err) {
@@ -348,10 +434,11 @@ function initDriverForm() {
 
 function initPassengerSearch() {
   const form = document.getElementById("passenger-form");
+  const addressInput = form.querySelector('[name="address"]');
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const fd = new FormData(form);
-    const address = fd.get("address").trim();
+    const address = addressInput.value.trim();
     const results = document.getElementById("passenger-results");
     const feedback = document.getElementById("passenger-feedback");
     feedback.className = "form-feedback";
@@ -359,7 +446,8 @@ function initPassengerSearch() {
     feedback.textContent = t("driver_geocoding");
 
     try {
-      const point = await Routing.geocodeAddress(address);
+      const cached = Routing.getResolved(addressInput);
+      const point = cached || (await Routing.geocodeAddress(address));
       if (!point) throw new Error("geocode-failed");
 
       const trajets = loadTrajets();
@@ -397,12 +485,18 @@ function initPassengerSearch() {
   });
 }
 
+// ---------- Address autocomplete wiring ----------
+
+function initAutocomplete() {
+  document.querySelectorAll(".address-field input").forEach((input) => Routing.attachAutocomplete(input));
+}
+
 // ---------- Tabs ----------
 
 function switchTab(tabId) {
   document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
   document.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.id === `tab-${tabId}`));
-  if (tabId === "map") setTimeout(() => map.invalidateSize(), 50);
+  if (tabId === "map" && map) setTimeout(() => map.invalidateSize(), 50);
 }
 
 function initTabs() {
@@ -411,12 +505,64 @@ function initTabs() {
   });
 }
 
+// ---------- Landing / role selection ----------
+
+function getRole() {
+  return localStorage.getItem(ROLE_KEY);
+}
+
+function applyRoleUI() {
+  const role = getRole();
+  const landing = document.getElementById("landing");
+  const tabBar = document.getElementById("tab-bar");
+  const appMain = document.getElementById("app-main");
+  const switchBtn = document.getElementById("switch-role-btn");
+
+  if (!role) {
+    landing.hidden = false;
+    tabBar.hidden = true;
+    appMain.hidden = true;
+    switchBtn.hidden = true;
+    return;
+  }
+
+  landing.hidden = true;
+  tabBar.hidden = false;
+  appMain.hidden = false;
+  switchBtn.hidden = false;
+
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    const r = btn.dataset.role;
+    btn.hidden = !(r === "both" || r === role);
+  });
+
+  switchTab(role === "driver" ? "driver" : "passenger");
+  renderAll();
+}
+
+function setRole(role) {
+  localStorage.setItem(ROLE_KEY, role);
+  applyRoleUI();
+}
+
+function clearRole() {
+  localStorage.removeItem(ROLE_KEY);
+  applyRoleUI();
+}
+
+function initRoleSelection() {
+  document.getElementById("role-driver-btn").addEventListener("click", () => setRole("driver"));
+  document.getElementById("role-passenger-btn").addEventListener("click", () => setRole("passenger"));
+  document.getElementById("switch-role-btn").addEventListener("click", () => clearRole());
+}
+
 // ---------- Global render ----------
 
 function renderAll() {
   const trajets = loadTrajets();
   renderTrajetsOnMap(trajets);
   renderTrajetsList();
+  renderRewards();
 }
 
 document.addEventListener("langchange", () => {
@@ -428,8 +574,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   applyTranslations();
   initLanguageSwitcher();
   initTabs();
+  initRoleSelection();
+  initAutocomplete();
   initDriverForm();
   initPassengerSearch();
+  applyRoleUI();
   await initMap();
   renderAll();
 });
