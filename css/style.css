@@ -1,0 +1,193 @@
+:root {
+  --brand: #2471a3;
+  --brand-dark: #1b4f66;
+  --bg: #f5f7f8;
+  --card-bg: #ffffff;
+  --border: #dfe4e6;
+  --text: #1f2a30;
+  --text-muted: #5b6b73;
+  --success: #1e8449;
+  --error: #c0392b;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--brand-dark);
+  color: white;
+}
+.app-header__brand h1 { margin: 0; font-size: 1.25rem; }
+.app-header__tagline { margin: 0.15rem 0 0; font-size: 0.8rem; opacity: 0.85; }
+#lang-switcher {
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: none;
+  background: white;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.tab-bar {
+  display: flex;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.tab-btn {
+  flex: 1 1 auto;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+.tab-btn:hover { color: var(--brand); }
+.tab-btn.active {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+  font-weight: 600;
+}
+
+.status-banner {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.85rem;
+  background: #eaf2f8;
+  color: var(--brand-dark);
+}
+.status-banner--error { background: #fdecea; color: var(--error); }
+.status-banner--success { background: #eafaf1; color: var(--success); }
+
+.app-main { flex: 1; min-height: 0; position: relative; }
+
+.tab-panel {
+  display: none;
+  height: 100%;
+  overflow-y: auto;
+}
+.tab-panel.active { display: block; }
+
+#tab-map, #map { height: 100%; width: 100%; }
+
+.panel-card {
+  max-width: 640px;
+  margin: 1.25rem auto;
+  padding: 1.25rem 1.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.panel-card h2 { margin-top: 0; font-size: 1.15rem; }
+
+.stacked-form { display: flex; flex-direction: column; gap: 0.85rem; }
+.stacked-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.stacked-form input,
+.stacked-form textarea,
+.stacked-form select {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: var(--text);
+  font-family: inherit;
+}
+.stacked-form--inline { flex-direction: row; align-items: flex-end; flex-wrap: wrap; }
+.stacked-form--inline .grow { flex: 1 1 240px; }
+
+.btn {
+  padding: 0.55rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.btn--primary { background: var(--brand); color: white; }
+.btn--primary:hover { background: var(--brand-dark); }
+.btn--primary:disabled { background: #a9b7bc; cursor: not-allowed; }
+.btn--secondary { background: #eef2f3; color: var(--text); }
+.btn--secondary:hover { background: #e2e8ea; }
+.btn--danger { background: #fdecea; color: var(--error); }
+.btn--danger:hover { background: #fadbd8; }
+
+.form-feedback { min-height: 1.2rem; font-size: 0.85rem; color: var(--text-muted); }
+.form-feedback--success { color: var(--success); }
+.form-feedback--error { color: var(--error); }
+
+.card-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
+.empty-state { color: var(--text-muted); font-size: 0.9rem; }
+
+.trajet-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  background: #fbfcfc;
+}
+.trajet-card__header { margin-bottom: 0.25rem; }
+.trajet-card__route { font-size: 0.9rem; color: var(--text-muted); }
+.trajet-card__resolved { font-size: 0.72rem; color: #8a97a0; margin-top: 0.1rem; }
+.trajet-card__note { font-size: 0.85rem; font-style: italic; margin-top: 0.25rem; }
+.trajet-card__seats { font-size: 0.8rem; margin-top: 0.35rem; font-weight: 600; color: var(--brand-dark); }
+.trajet-card__stations-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; }
+.trajet-card__chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.25rem; }
+.trajet-card__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.65rem; align-items: center; }
+
+.chip {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #eef2f3;
+  border: 1px solid var(--border);
+}
+.chip--train { border-color: #c0392b; color: #c0392b; }
+.chip--tram { border-color: #2471a3; color: #2471a3; }
+.chip--bus { border-color: #1e8449; color: #1e8449; }
+.chip--active { background: #fff3cd; border-color: #e0a800; color: #7a5c00; }
+
+.stop-marker {
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+.stop-marker--highlight { border-width: 3px; }
+
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+@media (max-width: 640px) {
+  .app-header { flex-wrap: wrap; }
+  .panel-card { margin: 0.75rem; padding: 1rem; }
+  .stacked-form--inline { flex-direction: column; align-items: stretch; }
+}

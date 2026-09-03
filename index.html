@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoVoiturage Lille</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header__brand">
+      <h1 data-i18n="appTitle">CoVoiturage Lille</h1>
+      <p class="app-header__tagline" data-i18n="appTagline">Rejoignez un trajet, prenez le bus, le tram ou le train ensemble.</p>
+    </div>
+    <select id="lang-switcher" aria-label="Language"></select>
+  </header>
+
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="map" data-i18n="nav_map">Carte</button>
+    <button class="tab-btn" data-tab="driver" data-i18n="nav_driver">Conducteur</button>
+    <button class="tab-btn" data-tab="passenger" data-i18n="nav_passenger">Passager</button>
+    <button class="tab-btn" data-tab="trajets" data-i18n="nav_trajets">Trajets</button>
+  </nav>
+
+  <div id="status-banner" class="status-banner" hidden></div>
+
+  <main class="app-main">
+    <section id="tab-map" class="tab-panel active">
+      <div id="map"></div>
+    </section>
+
+    <section id="tab-driver" class="tab-panel">
+      <div class="panel-card">
+        <h2 data-i18n="driver_title">Proposer un trajet</h2>
+        <form id="driver-form" class="stacked-form">
+          <label>
+            <span data-i18n="driver_name">Votre nom</span>
+            <input type="text" name="name" required maxlength="60" />
+          </label>
+          <label>
+            <span data-i18n="driver_origin">Départ (adresse)</span>
+            <input type="text" name="origin" required placeholder="ex. Place du Général de Gaulle, Lille" />
+          </label>
+          <label>
+            <span data-i18n="driver_destination">Arrivée (adresse)</span>
+            <input type="text" name="destination" required placeholder="ex. Gare de Lille Europe" />
+          </label>
+          <label>
+            <span data-i18n="driver_datetime">Date et heure de départ</span>
+            <input type="datetime-local" name="datetime" required />
+          </label>
+          <label>
+            <span data-i18n="driver_seats">Places disponibles</span>
+            <input type="number" name="seats" min="1" max="8" value="3" required />
+          </label>
+          <label>
+            <span data-i18n="driver_radius">Rayon de prise en charge (m)</span>
+            <input type="number" name="radius" min="50" max="1500" step="50" value="300" required />
+          </label>
+          <label>
+            <span data-i18n="driver_note">Note (optionnel)</span>
+            <textarea name="note" maxlength="200" rows="2"></textarea>
+          </label>
+          <button type="submit" class="btn btn--primary" data-i18n="driver_submit">Publier le trajet</button>
+          <p id="driver-feedback" class="form-feedback"></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="tab-passenger" class="tab-panel">
+      <div class="panel-card">
+        <h2 data-i18n="passenger_title">Trouver un trajet</h2>
+        <form id="passenger-form" class="stacked-form stacked-form--inline">
+          <label class="grow">
+            <span data-i18n="passenger_address">Votre adresse</span>
+            <input type="text" name="address" required placeholder="ex. Vieux-Lille" />
+          </label>
+          <button type="submit" class="btn btn--primary" data-i18n="passenger_search">Rechercher</button>
+        </form>
+        <p id="passenger-feedback" class="form-feedback"></p>
+        <div id="passenger-results" class="card-list"></div>
+      </div>
+    </section>
+
+    <section id="tab-trajets" class="tab-panel">
+      <div class="panel-card">
+        <h2 data-i18n="trajets_title">Trajets publiés</h2>
+        <div id="trajets-list" class="card-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/stations.js"></script>
+  <script src="js/routing.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
